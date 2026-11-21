@@ -1,4 +1,4 @@
-# VidFlow
+# PullStream
 
 A fast desktop video downloader built with **Tauri 2 (Rust)** and **React**. It downloads YouTube videos and full playlists, plus links from the 1,000+ other sites yt-dlp supports, and runs several downloads in parallel.
 
@@ -18,9 +18,9 @@ npm run tauri build    # release .app + .dmg in src-tauri/target/release/bundle
 
 ## First-run setup (tools aren't bundled)
 
-The installer is about **5 MB**. If yt-dlp, ffmpeg or deno is missing on first launch, VidFlow shows a setup screen with a single **Download & install** button. It downloads the tools in parallel from their official sources: about 143 MB on macOS and 178 MB on Windows.
+The installer is about **5 MB**. If yt-dlp, ffmpeg or deno is missing on first launch, PullStream shows a setup screen with a single **Download & install** button. It downloads the tools in parallel from their official sources: about 143 MB on macOS and 178 MB on Windows.
 
-| Tool | Source | Installed to (`<data>` = `~/Library/Application Support/com.vidflow.app`) |
+| Tool | Source | Installed to (`<data>` = `~/Library/Application Support/com.pullstream.app`) |
 |---|---|---|
 | yt-dlp | official **unpacked** build (`yt-dlp_macos.zip`, `yt-dlp_win.zip`) | `<data>/tools/yt-dlp/` |
 | ffmpeg + ffprobe | martin-riedl.de static builds (macOS/Linux), gyan.dev essentials (Windows) | `<data>/tools/bin/` |
@@ -29,12 +29,12 @@ The installer is about **5 MB**. If yt-dlp, ffmpeg or deno is missing on first l
 - **Verification:** each download is checked against its publisher's SHA-256 checksum, unpacked, and test-run before it is used. A failure leaves the previous install untouched, and a retry only downloads what is still missing.
 - **Queued jobs:** they wait until yt-dlp is installed, then start automatically.
 - **Existing installs:** if the tools are already installed (for example with Homebrew), setup is skipped.
-- **Lookup order:** custom path in Settings → VidFlow's tools → system install.
+- **Lookup order:** custom path in Settings → PullStream's tools → system install.
 - **Unpacked yt-dlp:** the single-file build unpacks itself on every run, about 5 s on macOS. The unpacked build starts in about 0.3 s.
 - **Settings → Tools:** shows where each tool comes from. It has Install/Reinstall buttons and **Update** for yt-dlp, which uses the same checked download. yt-dlp's own `-U` doesn't support unpacked builds.
 - **QA switches (debug builds only):**
-  - `VIDFLOW_NO_SYSTEM_TOOLS=1` ignores system installs, to simulate a clean machine.
-  - `VIDFLOW_AUTO_SETUP=1` runs setup at launch without the UI.
+  - `PULLSTREAM_NO_SYSTEM_TOOLS=1` ignores system installs, to simulate a clean machine.
+  - `PULLSTREAM_AUTO_SETUP=1` runs setup at launch without the UI.
 
 ## Features
 
@@ -43,6 +43,7 @@ The installer is about **5 MB**. If yt-dlp, ffmpeg or deno is missing on first l
 - **Video up to 8K**, or audio as MP3, M4A, Opus, FLAC or WAV, with embedded thumbnail, metadata and subtitles.
 - **Queue control:** pause, resume, cancel and retry each job or all of them. Downloads interrupted by quitting resume on the next launch.
 - **Convenience:** detects copied links, accepts dragged-in links, and pasting several links queues them all. ⌘L focuses the link field and ⌘↵ downloads immediately with the defaults.
+- **About, Terms & Conditions and Help:** sidebar pages for the app and its maker, [Substring Technologies](https://substringtechnologies.com/). Help opens the company's contact page; change `HELP_URL` in `src/lib/links.ts`.
 - **System:** light and dark themes, notifications when the window is in the background, a yt-dlp updater, and optional browser cookies for age-restricted videos.
 
 ## Architecture
@@ -70,8 +71,9 @@ Rust core
 
 ## Data
 
-- Database: `~/Library/Application Support/com.vidflow.app/vidflow.db`
-- Default download folder: `~/Downloads/VidFlow`
+- Database: `~/Library/Application Support/com.pullstream.app/pullstream.db`
+- Default download folder: `~/Downloads/PullStream`
+- **Migration:** the app was previously called VidFlow. On first launch, data from `com.vidflow.app` (queue, settings, installed tools) is moved to `com.pullstream.app` automatically.
 
 ## Roadmap
 

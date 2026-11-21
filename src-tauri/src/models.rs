@@ -184,7 +184,7 @@ pub enum MediaInfo {
 pub struct ToolInfo {
     pub path: Option<String>,
     pub version: Option<String>,
-    /// custom | managed (installed by VidFlow) | system
+    /// custom | managed (installed by PullStream) | system
     pub source: Option<String>,
 }
 

@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
-import { AlertCircle, CheckCircle2, Download, Gauge, Info, Settings as SettingsIcon, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  Download,
+  FileText,
+  Gauge,
+  HelpCircle,
+  Info,
+  Settings as SettingsIcon,
+  X,
+} from "lucide-react";
 import clsx from "clsx";
 import { missingTools, useStore, type View } from "./store";
 import { extractUrls, formatSpeed } from "./lib/format";
@@ -10,6 +21,9 @@ import { UrlBar } from "./components/UrlBar";
 import { PreviewPanel } from "./components/Preview";
 import { Queue } from "./components/Queue";
 import { SettingsView } from "./components/SettingsView";
+import { AboutView } from "./components/AboutView";
+import { TermsView } from "./components/TermsView";
+import { HELP_URL, open } from "./lib/links";
 import { SetupScreen } from "./components/SetupScreen";
 
 export default function App() {
@@ -48,8 +62,12 @@ export default function App() {
                 <Queue />
               </div>
             </>
-          ) : (
+          ) : view === "settings" ? (
             <SettingsView />
+          ) : view === "about" ? (
+            <AboutView />
+          ) : (
+            <TermsView />
           )}
         </div>
       </main>
@@ -73,9 +91,12 @@ function Sidebar() {
     return { active, queued, speed };
   }, [jobs]);
 
-  const items: { id: View; label: string; icon: typeof Download; badge?: number }[] = [
+  const items: { id: View | "help"; label: string; icon: typeof Download; badge?: number; href?: string }[] = [
     { id: "downloads", label: "Downloads", icon: Download, badge: stats.active + stats.queued || undefined },
     { id: "settings", label: "Settings", icon: SettingsIcon },
+    { id: "about", label: "About", icon: Info },
+    { id: "terms", label: "Terms & Conditions", icon: FileText },
+    { id: "help", label: "Help", icon: HelpCircle, href: HELP_URL },
   ];
 
   return (
@@ -86,7 +107,7 @@ function Sidebar() {
           <Download className="size-4 text-white" strokeWidth={2.5} />
         </div>
         <span className="text-[17px] font-bold tracking-tight">
-          Vid<span className="text-gradient">Flow</span>
+          Pull<span className="text-gradient">Stream</span>
         </span>
       </div>
 
@@ -94,7 +115,8 @@ function Sidebar() {
         {items.map((it) => (
           <button
             key={it.id}
-            onClick={() => setView(it.id)}
+            onClick={() => (it.href ? open(it.href) : setView(it.id as View))}
+            title={it.href ? `Opens ${it.href}` : undefined}
             className={clsx(
               "relative w-full flex items-center gap-3 h-10 px-3 rounded-xl text-[14px] font-medium transition-colors cursor-default",
               view === it.id ? "text-fg" : "text-muted hover:text-fg hover:bg-hover",
@@ -108,7 +130,8 @@ function Sidebar() {
               />
             )}
             <it.icon className={clsx("size-4 relative", view === it.id && "text-accent")} />
-            <span className="relative flex-1 text-left">{it.label}</span>
+            <span className="relative flex-1 text-left truncate">{it.label}</span>
+            {it.href && <ArrowUpRight className="relative size-3.5 opacity-60" />}
             {it.badge && (
               <span className="relative min-w-5 h-5 px-1.5 rounded-full gradient-accent text-white text-[11px] font-semibold grid place-items-center">
                 {it.badge}

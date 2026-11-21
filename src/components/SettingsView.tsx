@@ -231,16 +231,16 @@ export function SettingsView() {
             info={tools?.deno}
             action={installBtn("deno", !!tools?.deno.path)}
           />
-          <Row label="Custom yt-dlp path" hint="Optional. Leave empty to use VidFlow's copy">
+          <Row label="Custom yt-dlp path" hint="Optional. Leave empty to use PullStream's copy">
             <PathInput value={settings.ytdlpPath} onChange={(v) => set("ytdlpPath", v)} />
           </Row>
-          <Row label="Custom ffmpeg path" hint="Optional. Leave empty to use VidFlow's copy">
+          <Row label="Custom ffmpeg path" hint="Optional. Leave empty to use PullStream's copy">
             <PathInput value={settings.ffmpegPath} onChange={(v) => set("ffmpegPath", v)} />
           </Row>
         </Section>
 
         <p className="text-[12px] text-muted px-1 pb-8">
-          VidFlow is an unofficial tool. Only download content you own or have permission to download, and respect the
+          PullStream is an unofficial tool. Only download content you own or have permission to download, and respect the
           terms of the sites you use.
         </p>
       </div>
@@ -249,7 +249,7 @@ export function SettingsView() {
 }
 
 const SOURCE_LABEL: Record<string, string> = {
-  managed: "Installed by VidFlow",
+  managed: "Installed by PullStream",
   system: "System install",
   custom: "Custom path",
 };

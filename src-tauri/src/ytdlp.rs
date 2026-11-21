@@ -21,7 +21,7 @@ const EXTRA_DIRS: &[&str] = &[
     "/bin",
 ];
 
-/// Where VidFlow installs its tools (see tools.rs).
+/// Where PullStream installs its tools (see tools.rs).
 pub fn tools_dir(app: &AppHandle) -> Option<PathBuf> {
     app.path().app_data_dir().ok().map(|d| d.join("tools"))
 }
@@ -34,13 +34,13 @@ pub fn ytdlp_install_dir(app: &AppHandle) -> Option<PathBuf> {
     tools_dir(app).map(|d| d.join("yt-dlp"))
 }
 
-/// Search order: VidFlow's tools → system installs. Also used as PATH for
+/// Search order: PullStream's tools → system installs. Also used as PATH for
 /// child processes so yt-dlp finds deno (needed for YouTube) and ffprobe.
 fn search_dirs(app: &AppHandle) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = Vec::new();
     dirs.extend(tools_bin_dir(app));
     // QA switch (debug builds only): behave like a clean machine.
-    if cfg!(debug_assertions) && std::env::var_os("VIDFLOW_NO_SYSTEM_TOOLS").is_some() {
+    if cfg!(debug_assertions) && std::env::var_os("PULLSTREAM_NO_SYSTEM_TOOLS").is_some() {
         return dirs;
     }
     if let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
@@ -77,7 +77,7 @@ fn custom(override_path: &str) -> Option<PathBuf> {
     (!override_path.trim().is_empty() && p.is_file()).then_some(p)
 }
 
-/// Resolve ffmpeg/ffprobe/deno: custom setting → VidFlow's → system.
+/// Resolve ffmpeg/ffprobe/deno: custom setting → PullStream's → system.
 pub fn find_tool(app: &AppHandle, name: &str, override_path: &str) -> Option<PathBuf> {
     if let Some(p) = custom(override_path) {
         return Some(p);
@@ -89,7 +89,7 @@ pub fn find_tool(app: &AppHandle, name: &str, override_path: &str) -> Option<Pat
         .find(|p| p.is_file())
 }
 
-/// Resolve yt-dlp: custom setting → VidFlow's → system.
+/// Resolve yt-dlp: custom setting → PullStream's → system.
 pub fn find_ytdlp(app: &AppHandle, override_path: &str) -> Option<PathBuf> {
     if let Some(p) = custom(override_path) {
         return Some(p);
@@ -192,10 +192,10 @@ pub async fn update_ytdlp(app: &AppHandle, settings: &Settings) -> Result<String
     let bin = ytdlp(app, settings)?;
     match source_of(app, &bin, &settings.ytdlp_path) {
         "custom" => Err("A custom yt-dlp path is set. Update it yourself, or clear the path \
-                         in Settings to use VidFlow's copy."
+                         in Settings to use PullStream's copy."
             .into()),
         // System installs (e.g. Homebrew) can't be updated by us; install
-        // VidFlow's own copy, which then takes priority.
+        // PullStream's own copy, which then takes priority.
         "system" => crate::tools::update_ytdlp(app, "").await,
         _ => {
             let current = version_of(app, &bin, "--version").await.unwrap_or_default();

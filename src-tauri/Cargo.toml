@@ -1,12 +1,12 @@
 [package]
-name = "vidflow"
+name = "pullstream"
 version = "0.1.0"
-description = "VidFlow - fast parallel video downloader"
+description = "PullStream - fast parallel video downloader"
 authors = []
 edition = "2024"
 
 [lib]
-name = "vidflow_lib"
+name = "pullstream_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

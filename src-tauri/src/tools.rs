@@ -1,9 +1,9 @@
-//! First-run installer for the tools VidFlow needs (yt-dlp, ffmpeg + ffprobe,
+//! First-run installer for the tools PullStream needs (yt-dlp, ffmpeg + ffprobe,
 //! deno). Keeps the installer small (~10 MB): tools are downloaded once from
 //! their official release sources into the app data folder, SHA-256 verified,
 //! unpacked and smoke-tested. The same code updates yt-dlp later.
 //!
-//! Layout (macOS: ~/Library/Application Support/com.vidflow.app/tools):
+//! Layout (macOS: ~/Library/Application Support/com.pullstream.app/tools):
 //!   tools/yt-dlp/yt-dlp[.exe] + _internal/   unpacked build, ~0.3 s startup
 //!   tools/bin/ffmpeg, ffprobe, deno[.exe]
 
@@ -85,7 +85,7 @@ fn platform() -> Result<Platform, String> {
 
 fn client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("VidFlow-setup")
+        .user_agent("PullStream-setup")
         .connect_timeout(Duration::from_secs(20))
         .build()
         .map_err(|e| e.to_string())
@@ -412,7 +412,7 @@ pub async fn install(app: &AppHandle, tools: Vec<Tool>) -> Result<(), String> {
     result
 }
 
-/// Update VidFlow's yt-dlp if a newer release exists.
+/// Update PullStream's yt-dlp if a newer release exists.
 pub async fn update_ytdlp(app: &AppHandle, current: &str) -> Result<String, String> {
     let tag = latest_ytdlp_tag(&client()?).await?;
     // Versions are dates (2026.10.26[.1]), so string order is version order.

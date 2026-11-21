@@ -3,7 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { api, errorText } from "./lib/api";
 import type { Job, MediaInfo, Settings, ToolStatus } from "./lib/types";
 
-export type View = "downloads" | "settings";
+export type View = "downloads" | "settings" | "about" | "terms";
 export type Filter = "all" | "active" | "completed" | "failed";
 
 export interface Toast {

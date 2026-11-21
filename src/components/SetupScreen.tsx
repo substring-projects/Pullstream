@@ -93,10 +93,10 @@ export function SetupScreen() {
             <Sparkles className="size-6 text-white" />
           </div>
           <h1 className="mt-5 text-[26px] font-bold tracking-tight">
-            Welcome to Vid<span className="text-gradient">Flow</span>
+            Welcome to Pull<span className="text-gradient">Stream</span>
           </h1>
           <p className="mt-2 text-[14px] text-muted max-w-[440px]">
-            One quick setup step: VidFlow uses three free, open-source tools to download and process videos. We'll
+            One quick setup step: PullStream uses three free, open-source tools to download and process videos. We'll
             fetch them from their official sources. This only happens once.
           </p>
         </div>

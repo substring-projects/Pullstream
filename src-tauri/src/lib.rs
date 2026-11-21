@@ -20,8 +20,9 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
+            migrate_from_vidflow(&data_dir);
             std::fs::create_dir_all(&data_dir)?;
-            let mut db = db::Db::open(&data_dir.join("vidflow.db"))?;
+            let mut db = db::Db::open(&data_dir.join("pullstream.db"))?;
 
             let mut settings = db.load_settings().unwrap_or_default();
             if settings.download_dir.trim().is_empty() {
@@ -29,7 +30,7 @@ pub fn run() {
                     .path()
                     .download_dir()
                     .or_else(|_| app.path().home_dir())?;
-                settings.download_dir = base.join("VidFlow").to_string_lossy().into_owned();
+                settings.download_dir = base.join("PullStream").to_string_lossy().into_owned();
                 db.save_settings(&settings);
             }
 
@@ -61,7 +62,7 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 // QA switch (debug builds only): run setup without the UI.
                 #[cfg(debug_assertions)]
-                if std::env::var_os("VIDFLOW_AUTO_SETUP").is_some() {
+                if std::env::var_os("PULLSTREAM_AUTO_SETUP").is_some() {
                     let all = vec![tools::Tool::YtDlp, tools::Tool::Ffmpeg, tools::Tool::Deno];
                     eprintln!("[auto-setup] {:?}", tools::install(&handle, all).await);
                 }
@@ -92,7 +93,7 @@ pub fn run() {
             commands::open_download_dir,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building VidFlow")
+        .expect("error while building PullStream")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
                 manager::kill_all(app);
@@ -100,3 +101,21 @@ pub fn run() {
         });
 }
 
+
+/// The app was called VidFlow before. Move its data folder (queue, history,
+/// settings, installed tools) to the new identifier once, so nothing is lost.
+fn migrate_from_vidflow(data_dir: &std::path::Path) {
+    let Some(old) = data_dir.parent().map(|p| p.join("com.vidflow.app")) else { return };
+    if data_dir.exists() || !old.is_dir() {
+        return;
+    }
+    if std::fs::rename(&old, data_dir).is_err() {
+        return; // e.g. different volume; the app simply starts fresh
+    }
+    for suffix in ["", "-wal", "-shm"] {
+        let from = data_dir.join(format!("vidflow.db{suffix}"));
+        if from.exists() {
+            let _ = std::fs::rename(&from, data_dir.join(format!("pullstream.db{suffix}")));
+        }
+    }
+}
