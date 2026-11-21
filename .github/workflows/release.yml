@@ -1,0 +1,93 @@
+# Builds PullStream installers for macOS, Windows and Linux and attaches
+# them to a draft GitHub release.
+#
+# Run it by pushing a version tag:   git tag v0.1.0 && git push origin v0.1.0
+# or manually from the Actions tab ("Run workflow").
+#
+# Output:
+#   macOS    PullStream_<ver>_universal.dmg      (Apple Silicon + Intel)
+#   Windows  PullStream_<ver>_x64-setup.exe      (NSIS) and _x64_en-US.msi
+#   Linux    .AppImage, .deb and .rpm (x64)
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the release and upload installers
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (universal)
+            os: macos-latest
+            args: --target universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - name: Windows (x64)
+            os: windows-latest
+            args: ""
+            rust-targets: ""
+          - name: Linux (x64)
+            # Oldest supported Ubuntu → widest glibc compatibility for the AppImage/deb.
+            os: ubuntu-22.04
+            args: ""
+            rust-targets: ""
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # --- Optional code signing -------------------------------------
+          # Unsigned builds work, but macOS Gatekeeper and Windows SmartScreen
+          # will warn users. To sign, add these repository secrets and
+          # uncomment the lines (see https://v2.tauri.app/distribute/sign/):
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseName: PullStream v__VERSION__
+          releaseBody: |
+            Download the installer for your computer:
+            - **macOS** (Apple Silicon and Intel): `.dmg`
+            - **Windows**: `-setup.exe` (recommended) or `.msi`
+            - **Linux**: `.AppImage` (any distro), `.deb` (Ubuntu/Debian) or `.rpm` (Fedora)
+
+            On first launch PullStream downloads its tools (yt-dlp, FFmpeg, Deno), about 150 MB, once.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

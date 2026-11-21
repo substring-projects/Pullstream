@@ -4,6 +4,7 @@ import { ArrowUpRight, Download, Globe, Layers, Mail, MapPin, Zap } from "lucide
 import { COMPANY, THIRD_PARTY, open } from "../lib/links";
 import { useStore } from "../store";
 import { Button } from "./ui";
+import logoFull from "../assets/logo-full.jpg";
 
 export function AboutView() {
   const [version, setVersion] = useState("");
@@ -16,16 +17,16 @@ export function AboutView() {
     <div className="flex-1 overflow-y-auto -mx-2 px-2">
       <div className="max-w-3xl pb-8">
         {/* App */}
-        <div className="flex items-center gap-4">
-          <div className="size-16 rounded-2xl gradient-accent grid place-items-center shadow-[0_10px_40px_-8px_var(--accent)]">
-            <Download className="size-7 text-white" strokeWidth={2.5} />
-          </div>
-          <div>
-            <h1 className="text-[26px] font-bold tracking-tight leading-tight">
-              Pull<span className="text-gradient">Stream</span>
-            </h1>
-            <div className="text-[13px] text-muted">Version {version || "—"}</div>
-          </div>
+        <div className="relative overflow-hidden rounded-3xl bg-black shadow-[var(--shadow)]">
+          <img
+            src={logoFull}
+            alt="PullStream: video download"
+            draggable={false}
+            className="mx-auto h-64 w-auto object-contain"
+          />
+          <span className="absolute bottom-3 right-4 px-2 py-0.5 rounded-md bg-white/10 backdrop-blur text-white/80 text-[12px] font-medium">
+            Version {version || "—"}
+          </span>
         </div>
 
         <p className="mt-5 text-[14px] leading-relaxed text-fg/90 max-w-2xl">

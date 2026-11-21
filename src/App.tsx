@@ -24,6 +24,10 @@ import { SettingsView } from "./components/SettingsView";
 import { AboutView } from "./components/AboutView";
 import { TermsView } from "./components/TermsView";
 import { HELP_URL, open } from "./lib/links";
+import logoMark from "./assets/logo-mark.png";
+
+/** macOS uses an overlay title bar, so leave room for the traffic lights. */
+const isMac = navigator.userAgent.includes("Mac");
 import { SetupScreen } from "./components/SetupScreen";
 
 export default function App() {
@@ -50,7 +54,7 @@ export default function App() {
       <Sidebar />
       <main className="flex-1 min-w-0 flex flex-col">
         {/* Draggable title-bar area (window uses an overlay title bar) */}
-        <div data-tauri-drag-region className="h-10 shrink-0" />
+        <div data-tauri-drag-region className={isMac ? "h-10 shrink-0" : "h-5 shrink-0"} />
         <div className="flex-1 min-h-0 flex flex-col px-7 pb-6">
           {!ready ? null : view === "downloads" ? (
             <>
@@ -101,11 +105,14 @@ function Sidebar() {
 
   return (
     <aside className="w-56 shrink-0 flex flex-col border-r border-line bg-panel/60 backdrop-blur">
-      <div data-tauri-drag-region className="h-12 shrink-0" />
+      <div data-tauri-drag-region className={isMac ? "h-12 shrink-0" : "h-5 shrink-0"} />
       <div data-tauri-drag-region className="px-5 pb-6 flex items-center gap-2.5">
-        <div className="size-8 rounded-xl gradient-accent grid place-items-center shadow-[0_4px_16px_-4px_var(--accent)]">
-          <Download className="size-4 text-white" strokeWidth={2.5} />
-        </div>
+        <img
+          src={logoMark}
+          alt=""
+          draggable={false}
+          className="size-8 rounded-[9px] shadow-[0_4px_16px_-4px_var(--accent)]"
+        />
         <span className="text-[17px] font-bold tracking-tight">
           Pull<span className="text-gradient">Stream</span>
         </span>

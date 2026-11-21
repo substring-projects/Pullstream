@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { motion } from "motion/react";
-import { AlertCircle, CheckCircle2, Cpu, Download, Film, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertCircle, CheckCircle2, Cpu, Download, Film, Loader2, ShieldCheck } from "lucide-react";
 import clsx from "clsx";
 import { missingTools, useStore } from "../store";
 import { api, errorText } from "../lib/api";
 import { formatBytes } from "../lib/format";
 import type { SetupProgress, ToolId, ToolInfo } from "../lib/types";
 import { Button } from "./ui";
+import logoMark from "../assets/logo-mark.png";
 
 const isWindows = navigator.userAgent.includes("Windows");
 
@@ -89,9 +90,12 @@ export function SetupScreen() {
         className="relative w-full max-w-[560px]"
       >
         <div className="flex flex-col items-center text-center">
-          <div className="size-14 rounded-2xl gradient-accent grid place-items-center shadow-[0_10px_40px_-8px_var(--accent)]">
-            <Sparkles className="size-6 text-white" />
-          </div>
+          <img
+            src={logoMark}
+            alt="PullStream"
+            draggable={false}
+            className="size-20 rounded-[22px] shadow-[0_10px_40px_-8px_var(--accent)]"
+          />
           <h1 className="mt-5 text-[26px] font-bold tracking-tight">
             Welcome to Pull<span className="text-gradient">Stream</span>
           </h1>

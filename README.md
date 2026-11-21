@@ -1,81 +1,318 @@
+<div align="center">
+
+<img src="src/assets/logo-full.jpg" alt="PullStream: video download" width="520" />
+
 # PullStream
 
-A fast desktop video downloader built with **Tauri 2 (Rust)** and **React**. It downloads YouTube videos and full playlists, plus links from the 1,000+ other sites yt-dlp supports, and runs several downloads in parallel.
+**A fast, good-looking desktop downloader for videos and whole playlists.**
 
-> Unofficial tool. Only download content you own or have permission to download.
+Paste a link, pick a quality, and PullStream downloads several videos at once,<br/>
+then merges and converts them for you.
 
-## Requirements
+[![macOS](https://img.shields.io/badge/macOS-11%2B-000000?logo=apple&logoColor=white)](#installation)
+[![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white)](#installation)
+[![Linux](https://img.shields.io/badge/Linux-x64-FCC624?logo=linux&logoColor=black)](#installation)
+[![Built with Tauri](https://img.shields.io/badge/Built%20with-Tauri%202-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
+[![Rust](https://img.shields.io/badge/Rust-core-B7410E?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![React](https://img.shields.io/badge/React-UI-61DAFB?logo=react&logoColor=black)](https://react.dev)
 
-To build you need **Node 20+** and **Rust** (`curl https://sh.rustup.rs -sSf | sh`).
+[**Download**](../../releases/latest) · [Features](#features) · [Installation](#installation) · [Build from source](#building-from-source) · [Support](#support)
 
-## Run
+</div>
 
-```bash
-npm install
-npm run tauri dev      # development, with hot reload
-npm run tauri build    # release .app + .dmg in src-tauri/target/release/bundle
-```
+---
 
-## First-run setup (tools aren't bundled)
+> [!IMPORTANT]
+> PullStream is an **unofficial** tool. It is not affiliated with YouTube, Google or any other website.
+> YouTube does not officially support downloading its videos, so downloading from YouTube is **at your own risk**.
+> Only download content you own or have permission to download. See [Legal](#legal).
 
-The installer is about **5 MB**. If yt-dlp, ffmpeg or deno is missing on first launch, PullStream shows a setup screen with a single **Download & install** button. It downloads the tools in parallel from their official sources: about 143 MB on macOS and 178 MB on Windows.
+## Contents
 
-| Tool | Source | Installed to (`<data>` = `~/Library/Application Support/com.pullstream.app`) |
-|---|---|---|
-| yt-dlp | official **unpacked** build (`yt-dlp_macos.zip`, `yt-dlp_win.zip`) | `<data>/tools/yt-dlp/` |
-| ffmpeg + ffprobe | martin-riedl.de static builds (macOS/Linux), gyan.dev essentials (Windows) | `<data>/tools/bin/` |
-| deno | official release, used by yt-dlp for YouTube's JS challenges | `<data>/tools/bin/` |
-
-- **Verification:** each download is checked against its publisher's SHA-256 checksum, unpacked, and test-run before it is used. A failure leaves the previous install untouched, and a retry only downloads what is still missing.
-- **Queued jobs:** they wait until yt-dlp is installed, then start automatically.
-- **Existing installs:** if the tools are already installed (for example with Homebrew), setup is skipped.
-- **Lookup order:** custom path in Settings → PullStream's tools → system install.
-- **Unpacked yt-dlp:** the single-file build unpacks itself on every run, about 5 s on macOS. The unpacked build starts in about 0.3 s.
-- **Settings → Tools:** shows where each tool comes from. It has Install/Reinstall buttons and **Update** for yt-dlp, which uses the same checked download. yt-dlp's own `-U` doesn't support unpacked builds.
-- **QA switches (debug builds only):**
-  - `PULLSTREAM_NO_SYSTEM_TOOLS=1` ignores system installs, to simulate a clean machine.
-  - `PULLSTREAM_AUTO_SETUP=1` runs setup at launch without the UI.
+- [Features](#features)
+- [Installation](#installation)
+- [First launch](#first-launch)
+- [Using PullStream](#using-pullstream)
+- [Troubleshooting](#troubleshooting)
+- [Privacy](#privacy)
+- [Building from source](#building-from-source)
+- [Architecture](#architecture)
+- [Releasing](#releasing)
+- [Legal](#legal)
+- [Credits](#credits)
+- [Support](#support)
 
 ## Features
 
-- **Video, playlist and link support:** fetches a preview with available qualities and approximate sizes. Playlists show a selectable list that can be filtered and handles thousands of entries.
-- **Parallel downloads:** 1–10 at once (Settings). Each video can also fetch up to 16 fragments at a time.
-- **Video up to 8K**, or audio as MP3, M4A, Opus, FLAC or WAV, with embedded thumbnail, metadata and subtitles.
-- **Queue control:** pause, resume, cancel and retry each job or all of them. Downloads interrupted by quitting resume on the next launch.
-- **Convenience:** detects copied links, accepts dragged-in links, and pasting several links queues them all. ⌘L focuses the link field and ⌘↵ downloads immediately with the defaults.
-- **About, Terms & Conditions and Help:** sidebar pages for the app and its maker, [Substring Technologies](https://substringtechnologies.com/). Help opens the company's contact page; change `HELP_URL` in `src/lib/links.ts`.
-- **System:** light and dark themes, notifications when the window is in the background, a yt-dlp updater, and optional browser cookies for age-restricted videos.
+| | |
+|---|---|
+| ⚡ **Parallel downloads** | Download 1–10 videos at the same time, each over up to 16 connections. |
+| 📃 **Whole playlists** | Load a playlist of any size, choose videos with checkboxes, and save them numbered in their own folder. |
+| 🎬 **Any quality** | Video up to 4K/8K as MP4, with size estimates before you download. |
+| 🎵 **Audio only** | Extract MP3, M4A, Opus, FLAC or WAV, with cover art and tags embedded. |
+| 🌐 **1,000+ sites** | YouTube, Vimeo, X, Instagram and every other site [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). |
+| ⏯️ **Full queue control** | Pause, resume, cancel and retry each download or all at once. Interrupted downloads continue after a restart. |
+| 📋 **Smart link input** | Paste, drag and drop, or copy a link and PullStream offers to fetch it. Paste many links to queue them all. |
+| 🪶 **Small and fast** | A ~10 MB app that starts instantly. Built with Rust and Tauri, not Electron. |
+| 🌗 **Polished design** | Light and dark themes, live progress with speed and time left, and notifications when downloads finish. |
+| 🔒 **Private** | No account, no ads, no tracking. Everything runs on your computer. |
+
+## Installation
+
+Download the installer for your system from the [**latest release**](../../releases/latest).
+
+| System | File | Notes |
+|---|---|---|
+| **macOS** 11+ | `PullStream_x.y.z_universal.dmg` | One file for Apple Silicon and Intel Macs. |
+| **Windows** 10/11 | `PullStream_x.y.z_x64-setup.exe` | Recommended. An `.msi` is also available for managed installs. |
+| **Linux** (x64) | `.AppImage`, `.deb` or `.rpm` | `.AppImage` runs on most distributions. Use `.deb` on Ubuntu/Debian or `.rpm` on Fedora. |
+
+<details>
+<summary><b>macOS</b>: "Apple cannot check it for malicious software"</summary>
+
+<br/>
+
+1. Open the `.dmg` and drag **PullStream** into **Applications**.
+2. Open PullStream. If macOS blocks it, go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
+
+This warning appears because the current builds are not yet notarized by Apple. You only need to do this once.
+
+</details>
+
+<details>
+<summary><b>Windows</b>: "Windows protected your PC"</summary>
+
+<br/>
+
+1. Run `PullStream_x.y.z_x64-setup.exe`.
+2. If SmartScreen appears, click **More info → Run anyway**.
+
+PullStream installs for your user account only, so it doesn't need administrator rights.
+
+</details>
+
+<details>
+<summary><b>Linux</b></summary>
+
+<br/>
+
+```bash
+# AppImage (any distribution)
+chmod +x PullStream_*.AppImage && ./PullStream_*.AppImage
+
+# Debian / Ubuntu
+sudo apt install ./PullStream_*_amd64.deb
+
+# Fedora / RHEL
+sudo dnf install ./PullStream-*.x86_64.rpm
+```
+
+</details>
+
+## First launch
+
+PullStream uses three free, open-source tools to do the heavy lifting. They aren't bundled, which keeps the installer small. On first launch, a setup screen downloads them once:
+
+| Tool | What it does | Download size |
+|---|---|---|
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Reads videos and playlists from YouTube and 1,000+ sites | ~25–50 MB |
+| [FFmpeg](https://ffmpeg.org) | Merges HD video with audio and converts to MP3 | ~55–115 MB |
+| [Deno](https://deno.com) | Solves YouTube's playback checks | ~40 MB |
+
+Click **Download & install** and wait about 30 seconds on a typical connection. Every file comes from its official release source, is checked against the publisher's **SHA-256 checksum**, and is test-run before it is used.
+
+If the tools are already installed on your computer (for example with Homebrew), setup is skipped.
+
+## Using PullStream
+
+1. **Paste a link** to a video or playlist into the top bar and press **Enter**. You can also drop a link onto the window.
+2. **Choose** *Video* (and a quality) or *Audio* (and a format). For playlists, untick any videos you don't want.
+3. Click **Download**. Progress, speed and time left appear in the queue below.
+
+| Shortcut | macOS | Windows / Linux |
+|---|---|---|
+| Focus the link field | <kbd>⌘</kbd> <kbd>L</kbd> | <kbd>Ctrl</kbd> <kbd>L</kbd> |
+| Download right away with your default settings | <kbd>⌘</kbd> <kbd>↵</kbd> | <kbd>Ctrl</kbd> <kbd>↵</kbd> |
+| Clear the link and preview | <kbd>Esc</kbd> | <kbd>Esc</kbd> |
+
+Files are saved to `Downloads/PullStream` by default. Change the folder, the number of parallel downloads, default quality, speed limit and more in **Settings**.
+
+## Troubleshooting
+
+<details>
+<summary><b>A YouTube video suddenly fails to download</b></summary>
+
+<br/>
+
+YouTube changes often. Open **Settings → Tools** and click **Update** next to yt-dlp. This fixes most failures.
+
+</details>
+
+<details>
+<summary><b>"Sign in to confirm you're not a bot" or age-restricted videos</b></summary>
+
+<br/>
+
+In **Settings → App → Use browser cookies**, choose the browser where you're signed in to YouTube. PullStream then uses that session for downloads.
+
+</details>
+
+<details>
+<summary><b>Setup fails or a tool is missing</b></summary>
+
+<br/>
+
+Check your internet connection and click **Retry**. Only the missing tools are downloaded again. You can also reinstall any tool from **Settings → Tools**, or set a custom path to a copy you installed yourself.
+
+</details>
+
+<details>
+<summary><b>Where are my settings and history stored?</b></summary>
+
+<br/>
+
+| System | Folder |
+|---|---|
+| macOS | `~/Library/Application Support/com.pullstream.app/` |
+| Windows | `%APPDATA%\com.pullstream.app\` |
+| Linux | `~/.local/share/com.pullstream.app/` |
+
+The folder holds `pullstream.db` (queue, history and settings) and `tools/` (yt-dlp, FFmpeg, Deno). Delete it to reset PullStream completely.
+
+</details>
+
+## Privacy
+
+PullStream has no account, no analytics and no ads, and sends nothing to its developers. It only connects to:
+
+- the websites of the links you paste, to download them;
+- GitHub, martin-riedl.de (macOS/Linux) or gyan.dev (Windows), to download and update its tools.
+
+If you turn on **Use browser cookies**, they are read locally and passed only to yt-dlp on your computer.
+
+## Building from source
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org) 20 or newer
+- [Rust](https://rustup.rs) (stable)
+- Platform requirements for Tauri: [macOS](https://v2.tauri.app/start/prerequisites/#macos) (Xcode Command Line Tools), [Windows](https://v2.tauri.app/start/prerequisites/#windows) (MSVC Build Tools, WebView2) or [Linux](https://v2.tauri.app/start/prerequisites/#linux) (`libwebkit2gtk-4.1-dev` and others)
+
+### Develop and build
+
+```bash
+git clone <repository-url> pullstream && cd pullstream
+npm install
+
+npm run tauri dev       # run with hot reload
+npm run tauri build     # installers in src-tauri/target/release/bundle/
+
+# macOS universal build (Apple Silicon + Intel)
+rustup target add x86_64-apple-darwin aarch64-apple-darwin
+npm run tauri build -- --target universal-apple-darwin
+```
+
+### Tests
+
+```bash
+cd src-tauri && cargo test
+```
+
+### Debug switches
+
+These only work in debug builds:
+
+| Variable | Effect |
+|---|---|
+| `PULLSTREAM_NO_SYSTEM_TOOLS=1` | Ignore tools installed on the system, to simulate a clean machine. |
+| `PULLSTREAM_AUTO_SETUP=1` | Run first-launch setup automatically, without the UI. |
 
 ## Architecture
 
 ```
-React UI (Zustand store, virtualized lists)
-   │  invoke(commands)           ▲ events: job-updated / jobs-removed
-───┼─────────────────────────────┼───────────────────────────────
-Rust core
-   commands.rs  → API surface (fetch_info, add_downloads, pause, …)
-   manager.rs   → job map + scheduler (concurrency limit) + workers
-   ytdlp.rs     → binary discovery, metadata parsing, CLI args
-   db.rs        → SQLite (jobs + settings)
-   │
-   └─ one yt-dlp process per job (own process group) → ffmpeg
+┌──────────────────────── React UI (WebView) ────────────────────────┐
+│  URL bar · preview · playlist picker · virtualized queue · settings │
+│  Zustand store; progress events batched once per animation frame    │
+└───────────────┬─────────────────────────────────▲───────────────────┘
+                │ invoke(command)                 │ events: job-updated,
+                ▼                                 │ setup-progress
+┌──────────────────────────── Rust core ──────────────────────────────┐
+│  commands.rs  command API used by the UI                             │
+│  manager.rs   job queue, concurrency limit, one worker per job       │
+│  ytdlp.rs     tool lookup, metadata parsing, download arguments      │
+│  tools.rs     first-run installer and updater (SHA-256 verified)     │
+│  db.rs        SQLite: jobs, history, settings                        │
+└───────────────┬──────────────────────────────────────────────────────┘
+                ▼
+     yt-dlp (one process group per job) ──▶ FFmpeg · Deno
 ```
 
-- **Progress:** each worker runs yt-dlp with a JSON `--progress-template` and reads its stdout and stderr line by line.
-- **Update rate:** each job sends at most about 6 updates per second, and the frontend applies them once per animation frame.
-- **Pause and cancel:** both stop the job's whole process group, so the ffmpeg processes yt-dlp started stop too. Resuming continues from the `.part` files. Cancelling also deletes them.
-- **Finding tools:** the app looks for yt-dlp and ffmpeg in this order:
-  1. the custom path set in Settings
-  2. the tools installed by first-run setup
-  3. the Homebrew and system directories, then `PATH` (macOS GUI apps don't inherit the shell PATH)
+- **Workers:** each download runs yt-dlp with a JSON progress template. The worker parses its output and sends at most about 6 progress updates per second.
+- **Pause and cancel:** both stop the job's whole process group, so any FFmpeg processes stop too. Resuming continues from the partial files, and cancelling deletes them.
+- **Tool lookup order:** custom path in Settings → tools installed by PullStream → system install (Homebrew, `PATH`).
+- **Fast yt-dlp startup:** PullStream installs yt-dlp's unpacked build, which starts in ~0.3 s instead of ~5 s for the single-file build.
 
-## Data
+```
+src/                 React frontend
+  components/        UI views (Queue, Preview, Settings, SetupScreen, About, Terms…)
+  lib/               API wrappers, types, formatting, links
+  store.ts           application state
+src-tauri/src/       Rust backend (see diagram)
+branding/            logo sources (regenerate icons: npx tauri icon branding/app-icon-1024.png)
+.github/workflows/   release pipeline
+```
 
-- Database: `~/Library/Application Support/com.pullstream.app/pullstream.db`
-- Default download folder: `~/Downloads/PullStream`
-- **Migration:** the app was previously called VidFlow. On first launch, data from `com.vidflow.app` (queue, settings, installed tools) is moved to `com.pullstream.app` automatically.
+## Releasing
 
-## Roadmap
+[`.github/workflows/release.yml`](.github/workflows/release.yml) builds macOS, Windows and Linux installers on GitHub Actions and attaches them to a draft release.
 
-- Signed and notarized builds, plus app auto-update through the Tauri updater.
-- An aria2c downloader for direct file links.
+1. Update `version` in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json).
+2. Commit, then tag and push:
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+3. When the workflow finishes, review the draft release on GitHub and publish it.
+
+**Code signing (recommended before a public release):**
+- **macOS:** needs an Apple Developer ID to sign and notarize. Add the secrets listed in the workflow and uncomment them.
+- **Windows:** needs a code-signing certificate (for example Azure Trusted Signing).
+
+See [Tauri's signing guide](https://v2.tauri.app/distribute/sign/).
+
+## Legal
+
+PullStream is an independent tool. It is not affiliated with, endorsed by or sponsored by YouTube, Google or any other website. All trademarks belong to their owners.
+
+**You are responsible for how you use PullStream.**
+- Only download content you created, that is licensed for downloading (such as Creative Commons), or that you have permission to download.
+- Follow the terms of service of every site you use and the copyright law that applies to you.
+- **YouTube does not officially support downloading its videos.** If you download from YouTube, you do so at your own risk. Substring Technologies is not responsible for any resulting loss, account action or legal claim.
+
+The full Terms & Conditions are in the app under **Terms & Conditions**.
+
+© 2026 Substring Technologies. All rights reserved.
+
+## Credits
+
+PullStream is built on excellent open-source software:
+
+| Project | Used for | License |
+|---|---|---|
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Media extraction | Unlicense |
+| [FFmpeg](https://ffmpeg.org/legal.html) | Merging and conversion | LGPL / GPL |
+| [Deno](https://github.com/denoland/deno) | JavaScript runtime for YouTube checks | MIT |
+| [Tauri](https://tauri.app) | Desktop app framework | MIT / Apache-2.0 |
+| [React](https://react.dev), [Tailwind CSS](https://tailwindcss.com), [Motion](https://motion.dev), [Lucide](https://lucide.dev) | User interface | MIT / ISC |
+
+These tools are downloaded from their official sources and remain under their own licenses.
+
+## Support
+
+PullStream is made by **[Substring Technologies](https://substringtechnologies.com/)**, Lucknow, India.
+
+- 🌐 Website: [substringtechnologies.com](https://substringtechnologies.com/)
+- ✉️ Email: [contact@substringtechnologies.com](mailto:contact@substringtechnologies.com)
+- 💬 Contact page: [substringtechnologies.com/contact](https://substringtechnologies.com/contact/)
+
+Found a bug or have an idea? [Open an issue](../../issues).
