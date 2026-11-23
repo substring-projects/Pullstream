@@ -107,19 +107,31 @@ fn net_err(e: reqwest::Error) -> String {
     }
 }
 
-/// Hash for `file` in a "hash  name" listing; with `None`, the first hash.
+/// Find a SHA-256 in a published checksum file.
+/// - With `file`: the hash on the `hash  name` line for that file
+///   (SHA2-256SUMS, BtbN checksums.sha256).
+/// - Without: the first 64-hex-digit token anywhere. This also covers bare
+///   hashes and PowerShell `Get-FileHash` output, which Deno publishes for
+///   Windows (`Hash      : CBA84B…`, uppercase, CRLF).
 fn pick_hash(listing: &str, file: Option<&str>) -> Result<String, String> {
+    let is_hex = |t: &str| t.len() == 64 && t.chars().all(|c| c.is_ascii_hexdigit());
     for line in listing.lines() {
-        let mut parts = line.split_whitespace();
-        let (Some(hash), name) = (parts.next(), parts.next()) else { continue };
-        let is_hex = hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit());
-        let name_ok = match (file, name) {
-            (None, _) => true,
-            (Some(f), Some(n)) => n.trim_start_matches('*').rsplit('/').next() == Some(f),
-            _ => false,
-        };
-        if is_hex && name_ok {
-            return Ok(hash.to_lowercase());
+        let tokens: Vec<&str> = line.split_whitespace().collect();
+        match file {
+            Some(f) => {
+                if let [hash, name, ..] = tokens.as_slice() {
+                    let name = name.trim_start_matches('*');
+                    let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
+                    if is_hex(hash) && base == f {
+                        return Ok(hash.to_lowercase());
+                    }
+                }
+            }
+            None => {
+                if let Some(hash) = tokens.iter().find(|t| is_hex(t)) {
+                    return Ok(hash.to_lowercase());
+                }
+            }
         }
     }
     Err(format!("No checksum published for {}", file.unwrap_or("download")))
@@ -435,5 +447,12 @@ mod tests {
         assert_eq!(pick_hash(&format!("{h}  deno.zip"), None).unwrap(), h);
         assert_eq!(pick_hash(&format!("{h}\n"), None).unwrap(), h);
         assert!(pick_hash(&list, Some("missing.zip")).is_err());
+
+        // Deno's Windows checksum: PowerShell Get-FileHash output, CRLF.
+        let upper = "CBA84B26E0DF5AE7F74FC66B86A95B866872A86292EBD84FA1E959927EDD93BF";
+        let ps = format!(
+            "\r\nAlgorithm : SHA256\r\nHash      : {upper}\r\nPath      : C:\\a\\deno\\deno-x86_64-pc-windows-msvc.zip\r\n\r\n"
+        );
+        assert_eq!(pick_hash(&ps, None).unwrap(), upper.to_lowercase());
     }
 }
