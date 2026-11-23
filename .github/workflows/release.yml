@@ -65,6 +65,18 @@ jobs:
 
       - run: npm ci
 
+      # Release notes come from .github/release-notes.md (update it for each
+      # release). They're shown in the app's update dialog and What's New.
+      - name: Read release notes
+        id: notes
+        shell: bash
+        run: |
+          {
+            echo "body<<NOTES_EOF"
+            cat .github/release-notes.md
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,13 +98,7 @@ jobs:
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
           releaseName: PullStream v__VERSION__
-          releaseBody: |
-            Download the installer for your computer:
-            - **macOS** (Apple Silicon and Intel): `.dmg`
-            - **Windows**: `-setup.exe` (recommended) or `.msi`
-            - **Linux**: `.AppImage` (any distro), `.deb` (Ubuntu/Debian) or `.rpm` (Fedora)
-
-            On first launch PullStream downloads its tools (yt-dlp, FFmpeg, Deno), about 150 MB, once.
+          releaseBody: ${{ steps.notes.outputs.body }}
           # Generates latest.json for the in-app updater.
           includeUpdaterJson: true
           releaseDraft: true

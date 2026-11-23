@@ -318,7 +318,7 @@ branding/            logo sources (regenerate icons: npx tauri icon branding/app
 
 **One-time setup:** add the repository secret **`TAURI_SIGNING_PRIVATE_KEY`** containing the private key from `~/.tauri/pullstream.key` (Settings → Secrets and variables → Actions). Release builds fail without it. Keep a backup of that key: if it's lost, existing installs can no longer verify updates. The matching public key is in `tauri.conf.json`.
 
-1. Update `version` in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json).
+1. Update `version` in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json), `package.json` and `src-tauri/Cargo.toml`, and write what changed in [`.github/release-notes.md`](.github/release-notes.md) (one line per change; users see it in the update dialog).
 2. Commit, then tag and push:
    ```bash
    git tag v0.1.0

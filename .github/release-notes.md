@@ -1,0 +1,11 @@
+- Playlists grouped into one row with combined progress, plus a new History tab
+- Search, sort, multi-select, right-click menus and drag to reorder downloads
+- Choose subtitle languages, download only part of a video, and pick a folder per download
+- Quality options now show codec, HDR and file size
+- Clear error messages with one-click fixes (browser login, update yt-dlp, retry)
+- macOS menu bar and shortcuts, Dock and taskbar progress, remembers window size
+- Quit or sleep the computer when the queue finishes, and a sound when downloads complete
+- Tabbed settings with search and Reset to Defaults
+- Automatic updates from now on, with a What's New screen
+- Hindi language support
+- Fixed: Deno failed to install on Windows
