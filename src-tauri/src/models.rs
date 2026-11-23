@@ -38,6 +38,18 @@ pub struct DownloadOptions {
     pub max_height: Option<u32>,
     /// mp3 | m4a | opus | flac | wav (audio only)
     pub audio_format: String,
+    /// Subtitle languages to embed (e.g. ["en", "hi"]). Empty = none.
+    #[serde(default)]
+    pub subtitle_langs: Vec<String>,
+    /// Download only this part of the video, in seconds.
+    #[serde(default)]
+    pub section: Option<Section>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Section {
+    pub start: f64,
+    pub end: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,6 +119,9 @@ pub struct Settings {
     pub ytdlp_path: String,
     pub ffmpeg_path: String,
     pub theme: String,
+    /// system | en | hi
+    pub language: String,
+    pub sound_on_complete: bool,
 }
 
 impl Default for Settings {
@@ -129,6 +144,8 @@ impl Default for Settings {
             ytdlp_path: String::new(),
             ffmpeg_path: String::new(),
             theme: "system".into(),
+            language: "system".into(),
+            sound_on_complete: true,
         }
     }
 }
@@ -139,6 +156,18 @@ pub struct QualityOption {
     pub height: u32,
     pub fps: Option<f64>,
     pub approx_size: Option<u64>,
+    /// Best codec family at this height: H.264 | VP9 | AV1 | HEVC
+    pub codec: Option<String>,
+    pub hdr: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleTrack {
+    pub lang: String,
+    pub name: String,
+    /// Auto-generated captions rather than uploaded subtitles.
+    pub auto: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -168,6 +197,7 @@ pub enum MediaInfo {
         qualities: Vec<QualityOption>,
         audio_size: Option<u64>,
         has_playlist: bool,
+        subtitles: Vec<SubtitleTrack>,
     },
     #[serde(rename_all = "camelCase")]
     Playlist {

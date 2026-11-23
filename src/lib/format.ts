@@ -24,9 +24,30 @@ export function formatDuration(sec: number | null | undefined): string {
 
 export function formatEta(sec: number | null | undefined): string {
   if (sec == null || !isFinite(sec) || sec <= 0) return "";
-  if (sec < 60) return `${Math.round(sec)}s left`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ${Math.round(sec % 60)}s left`;
-  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m left`;
+  if (sec < 60) return `${Math.round(sec)}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ${Math.round(sec % 60)}s`;
+  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+}
+
+/** "14:32" for today, "Nov 21" this year, "Nov 21, 2025" otherwise. */
+export function formatWhen(ms: number | null | undefined, locale?: string): string {
+  if (!ms) return "";
+  const d = new Date(ms);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString())
+    return d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric",
+    ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
+  });
+}
+
+/** Parse "1:23", "01:02:03" or "90" into seconds; null if invalid. */
+export function parseTime(s: string): number | null {
+  const parts = s.trim().split(":").map((p) => p.trim());
+  if (!parts.length || parts.length > 3 || parts.some((p) => !/^\d+(\.\d+)?$/.test(p))) return null;
+  return parts.reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
 export function formatCount(n: number | null | undefined): string {

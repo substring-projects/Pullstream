@@ -14,6 +14,10 @@ export interface DownloadOptions {
   kind: MediaKind;
   maxHeight: number | null;
   audioFormat: string;
+  /** Subtitle languages to embed; empty = none. */
+  subtitleLangs?: string[];
+  /** Download only this part (seconds). */
+  section?: { start: number; end: number } | null;
 }
 
 export interface Job {
@@ -69,12 +73,22 @@ export interface Settings {
   ytdlpPath: string;
   ffmpegPath: string;
   theme: "system" | "light" | "dark";
+  language: "system" | "en" | "hi";
+  soundOnComplete: boolean;
 }
 
 export interface QualityOption {
   height: number;
   fps: number | null;
   approxSize: number | null;
+  codec: string | null;
+  hdr: boolean;
+}
+
+export interface SubtitleTrack {
+  lang: string;
+  name: string;
+  auto: boolean;
 }
 
 export interface PlaylistEntry {
@@ -100,6 +114,7 @@ export type MediaInfo =
       qualities: QualityOption[];
       audioSize: number | null;
       hasPlaylist: boolean;
+      subtitles: SubtitleTrack[];
     }
   | {
       type: "playlist";

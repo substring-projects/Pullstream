@@ -29,6 +29,8 @@ pub struct Inner {
     pub running: HashMap<String, Running>,
     pub settings: Settings,
     pub db: Db,
+    /// What to do when the queue empties: none | quit | sleep (session only).
+    pub when_done: String,
 }
 
 pub struct AppState(pub Mutex<Inner>);
@@ -222,6 +224,57 @@ async fn run_job(app: AppHandle, id: String) {
         notify(&app, &final_job);
     }
     schedule(&app);
+    // Only a finished download (not a pause/cancel) can trigger quit/sleep.
+    if matches!(final_job.status, JobStatus::Completed | JobStatus::Failed) {
+        after_queue_drained(&app);
+    }
+}
+
+/// Fire the "when finished" action once nothing is running or waiting.
+fn after_queue_drained(app: &AppHandle) {
+    let action = {
+        let state = app.state::<AppState>();
+        let mut inner = state.lock();
+        let busy = !inner.running.is_empty()
+            || inner.jobs.values().any(|j| j.status == JobStatus::Queued);
+        if busy {
+            return;
+        }
+        std::mem::replace(&mut inner.when_done, "none".into())
+    };
+    let _ = app.emit("queue-finished", &action);
+    match action.as_str() {
+        "quit" => {
+            let app = app.clone();
+            // Give the UI a moment to show the final state.
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                app.exit(0);
+            });
+        }
+        "sleep" => {
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                sleep_computer();
+            });
+        }
+        _ => {}
+    }
+}
+
+fn sleep_computer() {
+    let (cmd, args): (&str, &[&str]) = if cfg!(target_os = "macos") {
+        ("pmset", &["sleepnow"])
+    } else if cfg!(windows) {
+        ("rundll32.exe", &["powrprof.dll,SetSuspendState", "0,1,0"])
+    } else {
+        ("systemctl", &["suspend"])
+    };
+    let _ = std::process::Command::new(cmd)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
 }
 
 fn notify(app: &AppHandle, job: &Job) {

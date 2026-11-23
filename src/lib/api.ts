@@ -8,6 +8,8 @@ import type {
   ToolStatus,
 } from "./types";
 
+export type WhenDone = "none" | "quit" | "sleep";
+
 /** Typed wrappers around the Rust commands. */
 export const api = {
   getJobs: () => invoke<Job[]>("get_jobs"),
@@ -19,8 +21,14 @@ export const api = {
   installTools: (tools: string[] = []) => invoke<ToolStatus>("install_tools", { tools }),
   fetchInfo: (url: string, noPlaylist = false) =>
     invoke<MediaInfo>("fetch_info", { url, noPlaylist }),
-  addDownloads: (items: NewJob[], options: DownloadOptions) =>
-    invoke<Job[]>("add_downloads", { items, options }),
+  addDownloads: (items: NewJob[], options: DownloadOptions, outputDir?: string | null) =>
+    invoke<Job[]>("add_downloads", { items, options, outputDir: outputDir ?? null }),
+  reorder: (ids: string[]) => invoke<void>("reorder_jobs", { ids }),
+  diskSpace: (path?: string) => invoke<number | null>("disk_space", { path: path ?? null }),
+  setWhenDone: (action: WhenDone) => invoke<void>("set_when_done", { action }),
+  getWhenDone: () => invoke<WhenDone>("get_when_done"),
+  resetSettings: () => invoke<Settings>("reset_settings"),
+  diagnostics: () => invoke<string>("diagnostics"),
   pause: (id: string) => invoke<void>("pause_job", { id }),
   resume: (id: string) => invoke<void>("resume_job", { id }),
   cancel: (id: string) => invoke<void>("cancel_job", { id }),

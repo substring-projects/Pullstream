@@ -68,6 +68,11 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the update bundles so the in-app updater can verify them.
+          # Required: add repository secret TAURI_SIGNING_PRIVATE_KEY
+          # (contents of ~/.tauri/pullstream.key; never commit it).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # --- Optional code signing -------------------------------------
           # Unsigned builds work, but macOS Gatekeeper and Windows SmartScreen
           # will warn users. To sign, add these repository secrets and
@@ -88,6 +93,8 @@ jobs:
             - **Linux**: `.AppImage` (any distro), `.deb` (Ubuntu/Debian) or `.rpm` (Fedora)
 
             On first launch PullStream downloads its tools (yt-dlp, FFmpeg, Deno), about 150 MB, once.
+          # Generates latest.json for the in-app updater.
+          includeUpdaterJson: true
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

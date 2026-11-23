@@ -55,6 +55,12 @@ then merges and converts them for you.
 | 📋 **Smart link input** | Paste, drag and drop, or copy a link and PullStream offers to fetch it. Paste many links to queue them all. |
 | 🪶 **Small and fast** | A ~10 MB app that starts instantly. Built with Rust and Tauri, not Electron. |
 | 🌗 **Polished design** | Light and dark themes, live progress with speed and time left, and notifications when downloads finish. |
+| 🗂️ **Organised queue** | Playlists grouped with combined progress, a separate History, search, sort, multi-select, right-click menus and drag-to-reorder. |
+| ✂️ **Precise options** | Pick subtitle languages, download just part of a video, choose a folder per download, and see codec/HDR details. |
+| 🩺 **Helpful errors** | Plain-language explanations with one-click fixes (use browser login, update yt-dlp, retry). |
+| 🖥️ **Native feel** | macOS menu bar and shortcuts, translucent sidebar, Dock/taskbar progress, remembers window size, quit or sleep when done. |
+| 🔄 **Auto-updates** | Signed in-app updates with a "What's new" screen. |
+| 🌐 **English and हिन्दी** | Full UI in English and Hindi. |
 | 🔒 **Private** | No account, no ads, no tracking. Everything runs on your computer. |
 
 ## Installation
@@ -134,6 +140,11 @@ If the tools are already installed on your computer (for example with Homebrew),
 | Focus the link field | <kbd>⌘</kbd> <kbd>L</kbd> | <kbd>Ctrl</kbd> <kbd>L</kbd> |
 | Download right away with your default settings | <kbd>⌘</kbd> <kbd>↵</kbd> | <kbd>Ctrl</kbd> <kbd>↵</kbd> |
 | Clear the link and preview | <kbd>Esc</kbd> | <kbd>Esc</kbd> |
+| New download / paste link and fetch | <kbd>⌘</kbd> <kbd>N</kbd> / <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>V</kbd> | <kbd>Ctrl</kbd> <kbd>N</kbd> / <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>V</kbd> |
+| Downloads / History / Settings | <kbd>⌘</kbd> <kbd>1</kbd> / <kbd>2</kbd> / <kbd>,</kbd> | <kbd>Ctrl</kbd> <kbd>1</kbd> / <kbd>2</kbd> / <kbd>,</kbd> |
+| Search downloads | <kbd>⌘</kbd> <kbd>F</kbd> | <kbd>Ctrl</kbd> <kbd>F</kbd> |
+| In the list: move, select range, select all | <kbd>↑</kbd> <kbd>↓</kbd>, <kbd>⇧</kbd>-click, <kbd>⌘</kbd> <kbd>A</kbd> | <kbd>↑</kbd> <kbd>↓</kbd>, <kbd>Shift</kbd>-click, <kbd>Ctrl</kbd> <kbd>A</kbd> |
+| In the list: pause/resume, open, remove | <kbd>Space</kbd>, <kbd>↵</kbd>, <kbd>⌫</kbd> | <kbd>Space</kbd>, <kbd>Enter</kbd>, <kbd>Delete</kbd> |
 
 Files are saved to `Downloads/PullStream` by default. Change the folder, the number of parallel downloads, default quality, speed limit and more in **Settings**.
 
@@ -205,12 +216,21 @@ git clone <repository-url> pullstream && cd pullstream
 npm install
 
 npm run tauri dev       # run with hot reload
+npm run dev             # browser preview at http://localhost:1420 with sample data (see below)
+
+# Release builds sign the in-app update package, so they need the signing key:
+export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/pullstream.key)"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
 npm run tauri build     # installers in src-tauri/target/release/bundle/
 
 # macOS universal build (Apple Silicon + Intel)
 rustup target add x86_64-apple-darwin aarch64-apple-darwin
 npm run tauri build -- --target universal-apple-darwin
 ```
+
+### Browser preview mode
+
+`npm run dev` opened in a normal browser renders the UI with sample data instead of the Rust backend ([`src/dev/mockTauri.ts`](src/dev/mockTauri.ts)). Use it to design and review screens quickly. A URL hash opens a specific screen, for example `#history`, `#settings=tools`, `#preview`, `#select`, `#setup`, `#theme=light` or `#lang=hi` (combine with commas). It is only active in development and never ships in release builds.
 
 ### Tests
 
@@ -266,13 +286,15 @@ branding/            logo sources (regenerate icons: npx tauri icon branding/app
 
 [`.github/workflows/release.yml`](.github/workflows/release.yml) builds macOS, Windows and Linux installers on GitHub Actions and attaches them to a draft release.
 
+**One-time setup:** add the repository secret **`TAURI_SIGNING_PRIVATE_KEY`** containing the private key from `~/.tauri/pullstream.key` (Settings → Secrets and variables → Actions). Release builds fail without it. Keep a backup of that key: if it's lost, existing installs can no longer verify updates. The matching public key is in `tauri.conf.json`.
+
 1. Update `version` in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json).
 2. Commit, then tag and push:
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
    ```
-3. When the workflow finishes, review the draft release on GitHub and publish it.
+3. When the workflow finishes, review the draft release on GitHub, write the release notes (they appear in the app's update dialog and "What's new" screen), and publish it. Installed apps then offer the update automatically.
 
 **Code signing (recommended before a public release):**
 - **macOS:** needs an Apple Developer ID to sign and notarize. Add the secrets listed in the workflow and uncomment them.

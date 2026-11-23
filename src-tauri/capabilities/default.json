@@ -2,13 +2,21 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
     "opener:default",
     "dialog:default",
     "notification:default",
-    "clipboard-manager:allow-read-text"
+    "clipboard-manager:allow-read-text",
+    "core:window:allow-set-badge-count",
+    "core:window:allow-set-progress-bar",
+    "core:menu:default",
+    "updater:default",
+    "process:allow-restart",
+    "core:window:allow-set-theme"
   ]
 }

@@ -124,11 +124,12 @@ export function Chip({
   );
 }
 
-export function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       className={clsx(
         "relative w-10 h-6 rounded-full transition-colors shrink-0 cursor-default",
@@ -152,15 +153,18 @@ export function Select<T extends string>({
   onChange,
   options,
   className,
+  "aria-label": ariaLabel,
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: { value: T; label: string }[];
+  options: readonly { value: T; label: string }[];
   className?: string;
+  "aria-label"?: string;
 }) {
   return (
     <select
       value={value}
+      aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value as T)}
       className={clsx(
         "h-9 px-3 pr-8 rounded-lg bg-panel-2 border border-line text-[13px] outline-none",

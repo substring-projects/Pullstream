@@ -8,6 +8,7 @@ import { api, errorText } from "../lib/api";
 import { formatBytes } from "../lib/format";
 import type { SetupProgress, ToolId, ToolInfo } from "../lib/types";
 import { Button } from "./ui";
+import { useT, tNow, type Key } from "../i18n";
 import logoMark from "../assets/logo-mark.png";
 
 const isWindows = navigator.userAgent.includes("Windows");
@@ -17,15 +18,16 @@ const SIZE: Record<ToolId, number> = isWindows
   ? { "yt-dlp": 23, ffmpeg: 114, deno: 41 }
   : { "yt-dlp": 52, ffmpeg: 54, deno: 37 };
 
-const TOOLS: { id: ToolId; key: "ytdlp" | "ffmpeg" | "deno"; name: string; role: string; icon: typeof Film }[] = [
-  { id: "yt-dlp", key: "ytdlp", name: "yt-dlp", role: "Reads videos and playlists from YouTube and 1,000+ sites", icon: Download },
-  { id: "ffmpeg", key: "ffmpeg", name: "FFmpeg", role: "Merges HD video with audio and converts to MP3", icon: Film },
-  { id: "deno", key: "deno", name: "Deno", role: "Solves YouTube's playback checks", icon: Cpu },
+const TOOLS: { id: ToolId; key: "ytdlp" | "ffmpeg" | "deno"; name: string; role: Key; icon: typeof Film }[] = [
+  { id: "yt-dlp", key: "ytdlp", name: "yt-dlp", role: "setup.role.ytdlp" as Key, icon: Download },
+  { id: "ffmpeg", key: "ffmpeg", name: "FFmpeg", role: "setup.role.ffmpeg" as Key, icon: Film },
+  { id: "deno", key: "deno", name: "Deno", role: "setup.role.deno" as Key, icon: Cpu },
 ];
 
 type RowState = { status: "found" | "pending" | SetupProgress["status"]; downloaded: number; total: number | null; message: string | null };
 
 export function SetupScreen() {
+  const t = useT();
   const { tools, setTools, skipSetup, toast } = useStore();
   const [running, setRunning] = useState(false);
   const [rows, setRows] = useState<Record<ToolId, RowState>>(() => initialRows(tools));
@@ -58,7 +60,7 @@ export function SetupScreen() {
       // Brief pause so the user sees everything turn green.
       setTimeout(() => {
         setTools(status);
-        toast({ kind: "success", text: "All set! Paste a link to start downloading." });
+        toast({ kind: "success", text: tNow("setup.done") });
       }, 900);
     } catch (e) {
       setError(errorText(e));
@@ -97,11 +99,10 @@ export function SetupScreen() {
             className="size-20 rounded-[22px] shadow-[0_10px_40px_-8px_var(--accent)]"
           />
           <h1 className="mt-5 text-[26px] font-bold tracking-tight">
-            Welcome to Pull<span className="text-gradient">Stream</span>
+            {t("setup.welcome")} Pull<span className="text-gradient">Stream</span>
           </h1>
           <p className="mt-2 text-[14px] text-muted max-w-[440px]">
-            One quick setup step: PullStream uses three free, open-source tools to download and process videos. We'll
-            fetch them from their official sources. This only happens once.
+            {t("setup.intro")}
           </p>
         </div>
 
@@ -135,21 +136,20 @@ export function SetupScreen() {
           <Button variant="primary" size="lg" className="w-full max-w-[320px]" onClick={install} disabled={running}>
             {running ? (
               <>
-                <Loader2 className="size-4 animate-spin" /> Installing…
+                <Loader2 className="size-4 animate-spin" /> {t("setup.installing")}
               </>
             ) : (
               <>
-                <Download className="size-4" /> {error ? "Retry" : "Download & install"} · ~{totalMb} MB
+                <Download className="size-4" /> {error ? t("setup.retry", { mb: totalMb }) : t("setup.install", { mb: totalMb })}
               </>
             )}
           </Button>
           <div className="flex items-center gap-1.5 text-[12px] text-muted">
-            <ShieldCheck className="size-3.5 text-success" /> Every file is checked against its official SHA-256
-            checksum
+            <ShieldCheck className="size-3.5 text-success" /> {t("setup.checksum")}
           </div>
           {!running && (
             <button onClick={skipSetup} className="text-[12px] text-muted hover:text-fg underline-offset-2 hover:underline cursor-default">
-              Skip for now. I'll set custom paths in Settings
+              {t("setup.skip")}
             </button>
           )}
         </div>
@@ -167,13 +167,14 @@ function ToolLine({
   row: RowState;
   info?: ToolInfo;
 }) {
+  const t = useT();
   const Icon = tool.icon;
   let right: React.ReactNode;
   switch (row.status) {
     case "found":
       right = (
         <span className="inline-flex items-center gap-1.5 text-[12px] text-success font-medium">
-          <CheckCircle2 className="size-4" /> {info?.source === "managed" ? "Installed" : "Found on this computer"}
+          <CheckCircle2 className="size-4" /> {info?.source === "managed" ? t("setup.installed") : t("setup.found")}
         </span>
       );
       break;
@@ -199,7 +200,7 @@ function ToolLine({
     case "installing":
       right = (
         <span className="inline-flex items-center gap-1.5 text-[12px] text-muted">
-          <Loader2 className="size-3.5 animate-spin" /> Verifying & installing
+          <Loader2 className="size-3.5 animate-spin" /> {t("setup.verifying")}
         </span>
       );
       break;
@@ -210,14 +211,14 @@ function ToolLine({
           animate={{ scale: 1, opacity: 1 }}
           className="inline-flex items-center gap-1.5 text-[12px] text-success font-medium"
         >
-          <CheckCircle2 className="size-4" /> Installed
+          <CheckCircle2 className="size-4" /> {t("setup.installed")}
         </motion.span>
       );
       break;
     case "error":
       right = (
         <span className="inline-flex items-center gap-1.5 text-[12px] text-danger font-medium max-w-48 truncate" title={row.message ?? ""}>
-          <AlertCircle className="size-4 shrink-0" /> {row.message ?? "Failed"}
+          <AlertCircle className="size-4 shrink-0" /> {row.message ?? t("setup.failed")}
         </span>
       );
       break;
@@ -234,7 +235,7 @@ function ToolLine({
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-[14px] font-semibold">{tool.name}</div>
-        <div className="text-[12px] text-muted truncate">{tool.role}</div>
+        <div className="text-[12px] text-muted truncate">{t(tool.role)}</div>
       </div>
       {right}
     </div>

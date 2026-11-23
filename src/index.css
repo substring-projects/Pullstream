@@ -139,3 +139,47 @@ textarea,
   background-size: 800px 100%;
   animation: shimmer 1.4s linear infinite;
 }
+
+/* ---------- Accessibility: visible keyboard focus everywhere ---------- */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+/* Text fields show focus with their own accent border instead. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+
+/* macOS: transparent window + native "sidebar" vibrancy behind the sidebar.
+   The main area stays opaque. */
+html.vibrant,
+html.vibrant body,
+html.vibrant #root {
+  background: transparent;
+}
+html.vibrant .sidebar {
+  background: color-mix(in srgb, var(--panel) 45%, transparent);
+}
+/* Light theme: keep the sidebar clearly light even if the native material
+   lags behind a theme switch. */
+html.vibrant:not(.dark) .sidebar {
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+}

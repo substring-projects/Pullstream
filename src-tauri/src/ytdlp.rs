@@ -2,7 +2,8 @@
 //! locating them, fetching metadata and building download arguments.
 
 use crate::models::{
-    Job, MediaInfo, MediaKind, PlaylistEntry, QualityOption, Settings, ToolInfo, ToolStatus,
+    Job, MediaInfo, MediaKind, PlaylistEntry, QualityOption, Settings, SubtitleTrack, ToolInfo,
+    ToolStatus,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -282,14 +283,22 @@ fn parse_info(input_url: &str, v: &Value) -> MediaInfo {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    let mut by_height: BTreeMap<u32, (Option<f64>, Option<u64>)> = BTreeMap::new();
+    // height → (max fps, max size, codecs seen, any HDR)
+    let mut by_height: BTreeMap<u32, (Option<f64>, Option<u64>, Vec<String>, bool)> = BTreeMap::new();
     let mut audio_size: Option<u64> = None;
     for fmt in &formats {
         let vcodec = s(fmt, "vcodec").unwrap_or_default();
         let acodec = s(fmt, "acodec").unwrap_or_default();
         if vcodec != "none" && !vcodec.is_empty() {
             if let Some(h) = fmt.get("height").and_then(Value::as_u64) {
-                let e = by_height.entry(h as u32).or_insert((None, None));
+                let e = by_height.entry(h as u32).or_insert((None, None, Vec::new(), false));
+                let family = codec_family(&vcodec);
+                if !e.2.contains(&family) {
+                    e.2.push(family);
+                }
+                if s(fmt, "dynamic_range").is_some_and(|d| d.starts_with("HDR")) {
+                    e.3 = true;
+                }
                 if let Some(fps) = f(fmt, "fps") {
                     e.0 = Some(e.0.map_or(fps, |x: f64| x.max(fps)));
                 }
@@ -307,12 +316,19 @@ fn parse_info(input_url: &str, v: &Value) -> MediaInfo {
         .into_iter()
         .rev()
         .filter(|(h, _)| *h >= 144)
-        .map(|(height, (fps, size))| QualityOption {
+        .map(|(height, (fps, size, codecs, hdr))| QualityOption {
             height,
             fps,
             approx_size: size,
+            // Report the most efficient codec available.
+            codec: ["AV1", "VP9", "HEVC", "H.264"]
+                .into_iter()
+                .find(|c| codecs.iter().any(|x| x == c))
+                .map(str::to_string),
+            hdr,
         })
         .collect();
+    let subtitles = parse_subtitles(v);
 
     MediaInfo::Video {
         url: s(v, "webpage_url").unwrap_or_else(|| input_url.to_string()),
@@ -326,7 +342,66 @@ fn parse_info(input_url: &str, v: &Value) -> MediaInfo {
         qualities,
         audio_size,
         has_playlist: input_url.contains("list="),
+        subtitles,
     }
+}
+
+fn codec_family(vcodec: &str) -> String {
+    let c = vcodec.to_ascii_lowercase();
+    if c.starts_with("av01") {
+        "AV1"
+    } else if c.starts_with("vp9") || c.starts_with("vp09") {
+        "VP9"
+    } else if c.starts_with("hev") || c.starts_with("hvc") || c.starts_with("h265") {
+        "HEVC"
+    } else {
+        "H.264"
+    }
+    .into()
+}
+
+/// Uploaded subtitles first, then auto-generated captions for languages
+/// that have no uploaded track. Auto captions are limited to the video's
+/// original language plus English/Hindi to keep the list short (YouTube
+/// offers auto-translation into 100+ languages).
+fn parse_subtitles(v: &Value) -> Vec<SubtitleTrack> {
+    let mut out: Vec<SubtitleTrack> = Vec::new();
+    let name_of = |tracks: &Value| {
+        tracks
+            .as_array()
+            .and_then(|a| a.first())
+            .and_then(|t| s(t, "name"))
+    };
+    if let Some(map) = v.get("subtitles").and_then(Value::as_object) {
+        for (lang, tracks) in map {
+            if lang == "live_chat" {
+                continue;
+            }
+            out.push(SubtitleTrack {
+                lang: lang.clone(),
+                name: name_of(tracks).unwrap_or_else(|| lang.clone()),
+                auto: false,
+            });
+        }
+    }
+    let original = s(v, "language").unwrap_or_default();
+    if let Some(map) = v.get("automatic_captions").and_then(Value::as_object) {
+        for (lang, tracks) in map {
+            let wanted = lang == &original
+                || lang.ends_with("-orig")
+                || lang == "en"
+                || lang == "hi";
+            if wanted && !out.iter().any(|t| &t.lang == lang) {
+                out.push(SubtitleTrack {
+                    lang: lang.clone(),
+                    name: name_of(tracks).unwrap_or_else(|| lang.clone()),
+                    auto: true,
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| a.auto.cmp(&b.auto).then(a.name.cmp(&b.name)));
+    out
 }
 
 fn parse_entry(e: &Value) -> Option<PlaylistEntry> {
@@ -433,7 +508,11 @@ pub fn download_command(
             if settings.embed_thumbnail {
                 cmd.arg("--embed-thumbnail");
             }
-            if settings.embed_subtitles {
+            // Per-download choice wins; otherwise the global English default.
+            if !job.options.subtitle_langs.is_empty() {
+                cmd.args(["--write-subs", "--write-auto-subs", "--embed-subs", "--sub-langs"])
+                    .arg(job.options.subtitle_langs.join(","));
+            } else if settings.embed_subtitles {
                 cmd.args(["--write-subs", "--embed-subs", "--sub-langs", "en.*,-live_chat"]);
             }
         }
@@ -447,6 +526,13 @@ pub fn download_command(
                 cmd.arg("--embed-thumbnail");
             }
         }
+    }
+
+    if let Some(sec) = job.options.section.filter(|s| s.end > s.start) {
+        // Cut at exact times (re-encodes the edges, so it's slower).
+        cmd.arg("--download-sections")
+            .arg(format!("*{:.2}-{:.2}", sec.start.max(0.0), sec.end))
+            .arg("--force-keyframes-at-cuts");
     }
 
     cmd.arg("--").arg(&job.url);

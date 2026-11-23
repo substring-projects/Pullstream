@@ -142,10 +142,15 @@ pub fn add_downloads(
     state: State<'_, AppState>,
     items: Vec<NewJob>,
     options: DownloadOptions,
+    output_dir: Option<String>,
 ) -> CmdResult<Vec<Job>> {
     let created = {
         let mut inner = state.lock();
-        let base = PathBuf::from(&inner.settings.download_dir);
+        // A folder picked for this download wins over the default.
+        let base = output_dir
+            .filter(|d| !d.trim().is_empty())
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(&inner.settings.download_dir));
         let subfolders = inner.settings.playlist_subfolder;
         let start = now_ms();
         let mut created = Vec::with_capacity(items.len());
@@ -382,4 +387,145 @@ pub fn open_download_dir(app: AppHandle, state: State<'_, AppState>) -> CmdResul
     app.opener()
         .open_path(dir, None::<&str>)
         .map_err(|e| e.to_string())
+}
+
+/// Reorder waiting downloads. `ids` is the desired order; their existing
+/// queue positions (created_at values) are reassigned in that order, so
+/// jobs not listed keep their place.
+#[tauri::command]
+pub fn reorder_jobs(app: AppHandle, state: State<'_, AppState>, ids: Vec<String>) {
+    let snapshots = {
+        let mut inner = state.lock();
+        let mut slots: Vec<i64> = ids
+            .iter()
+            .filter_map(|id| inner.jobs.get(id).map(|j| j.created_at))
+            .collect();
+        slots.sort_unstable();
+        let mut changed = Vec::new();
+        for (id, slot) in ids.iter().zip(slots) {
+            if let Some(j) = inner.jobs.get_mut(id) {
+                if j.created_at != slot {
+                    j.created_at = slot;
+                    changed.push(j.clone());
+                }
+            }
+        }
+        inner.db.save_jobs(&changed);
+        changed
+    };
+    for j in &snapshots {
+        emit_job(&app, j);
+    }
+}
+
+/// Free space (bytes) on the volume holding `path` (or the download folder).
+#[tauri::command]
+pub fn disk_space(state: State<'_, AppState>, path: Option<String>) -> Option<u64> {
+    let mut p = PathBuf::from(path.unwrap_or_else(|| state.lock().settings.download_dir.clone()));
+    // The folder may not exist yet; walk up to an existing ancestor.
+    while !p.exists() {
+        if !p.pop() {
+            return None;
+        }
+    }
+    fs2::available_space(&p).ok()
+}
+
+#[tauri::command]
+pub fn set_when_done(state: State<'_, AppState>, action: String) {
+    let action = match action.as_str() {
+        "quit" | "sleep" => action,
+        _ => "none".into(),
+    };
+    state.lock().when_done = action;
+}
+
+#[tauri::command]
+pub fn get_when_done(state: State<'_, AppState>) -> String {
+    state.lock().when_done.clone()
+}
+
+/// Restore default settings, keeping the download folder and tool paths.
+#[tauri::command]
+pub fn reset_settings(app: AppHandle, state: State<'_, AppState>) -> Settings {
+    let settings = {
+        let mut inner = state.lock();
+        let old = inner.settings.clone();
+        let fresh = Settings {
+            download_dir: old.download_dir,
+            ytdlp_path: old.ytdlp_path,
+            ffmpeg_path: old.ffmpeg_path,
+            ..Settings::default()
+        };
+        inner.settings = fresh.clone();
+        inner.db.save_settings(&fresh);
+        fresh
+    };
+    schedule(&app);
+    settings
+}
+
+/// Plain-text report for support requests. Contains no URLs of what the
+/// user downloaded, only versions, settings and recent error messages.
+#[tauri::command]
+pub async fn diagnostics(app: AppHandle, state: State<'_, AppState>) -> CmdResult<String> {
+    let s = settings_of(&state);
+    let tools = ytdlp::tool_status(&app, &s).await;
+    let (counts, errors) = {
+        let inner = state.lock();
+        let mut counts: std::collections::BTreeMap<&'static str, usize> = Default::default();
+        for j in inner.jobs.values() {
+            let k = match j.status {
+                JobStatus::Completed => "completed",
+                JobStatus::Failed => "failed",
+                JobStatus::Paused => "paused",
+                JobStatus::Canceled => "canceled",
+                JobStatus::Queued => "queued",
+                _ => "active",
+            };
+            *counts.entry(k).or_default() += 1;
+        }
+        let mut failed: Vec<&Job> = inner
+            .jobs
+            .values()
+            .filter(|j| j.status == JobStatus::Failed)
+            .collect();
+        failed.sort_by_key(|j| std::cmp::Reverse(j.finished_at.unwrap_or(j.created_at)));
+        let errors: Vec<String> = failed
+            .iter()
+            .take(5)
+            .filter_map(|j| j.error.clone())
+            .map(|e| e.lines().next().unwrap_or("").chars().take(200).collect())
+            .collect();
+        (counts, errors)
+    };
+    let tool = |name: &str, t: &crate::models::ToolInfo| {
+        format!(
+            "{name}: {} ({})",
+            t.version.as_deref().unwrap_or("missing"),
+            t.source.as_deref().unwrap_or("-")
+        )
+    };
+    let mut out = vec![
+        format!("PullStream {}", app.package_info().version),
+        format!("OS: {} {}", std::env::consts::OS, std::env::consts::ARCH),
+        tool("yt-dlp", &tools.ytdlp),
+        tool("ffmpeg", &tools.ffmpeg),
+        tool("deno", &tools.deno),
+        format!(
+            "Settings: parallel={} fragments={} quality={:?} audio={} cookies={} rate_limit={}",
+            s.max_concurrent,
+            s.concurrent_fragments,
+            s.default_max_height,
+            s.audio_format,
+            s.cookies_browser,
+            if s.rate_limit.is_empty() { "none" } else { &s.rate_limit }
+        ),
+        format!("Jobs: {counts:?}"),
+    ];
+    if !errors.is_empty() {
+        out.push("Recent errors:".into());
+        out.extend(errors.into_iter().map(|e| format!("  - {e}")));
+    }
+    Ok(out.join("\n"))
 }

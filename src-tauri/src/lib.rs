@@ -9,7 +9,7 @@ use manager::{AppState, Inner};
 use models::JobStatus;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,7 +18,17 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .on_menu_event(|app, event| {
+            // Menu actions are handled by the UI.
+            let _ = app.emit("menu", event.id().0.as_str());
+        })
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_menu(build_menu(app.handle())?)?;
+
             let data_dir = app.path().app_data_dir()?;
             migrate_from_vidflow(&data_dir);
             std::fs::create_dir_all(&data_dir)?;
@@ -55,6 +65,7 @@ pub fn run() {
                 running: HashMap::new(),
                 settings,
                 db,
+                when_done: "none".into(),
             })));
             // Tool housekeeping runs in the background; queued jobs start
             // as soon as a stale yt-dlp update (if any) is cleared.
@@ -91,6 +102,12 @@ pub fn run() {
             commands::open_file,
             commands::reveal_file,
             commands::open_download_dir,
+            commands::reorder_jobs,
+            commands::disk_space,
+            commands::set_when_done,
+            commands::get_when_done,
+            commands::reset_settings,
+            commands::diagnostics,
         ])
         .build(tauri::generate_context!())
         .expect("error while building PullStream")
@@ -118,4 +135,75 @@ fn migrate_from_vidflow(data_dir: &std::path::Path) {
             let _ = std::fs::rename(&from, data_dir.join(format!("pullstream.db{suffix}")));
         }
     }
+}
+
+/// Standard macOS menu bar. Custom items are forwarded to the UI as a
+/// "menu" event carrying the item id. (Windows and Linux use in-app
+/// keyboard shortcuts instead of a menu bar.)
+#[cfg(target_os = "macos")]
+fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+    let item = |id: &str, label: &str, accel: Option<&str>| {
+        let b = MenuItemBuilder::with_id(id, label);
+        match accel {
+            Some(a) => b.accelerator(a).build(app),
+            None => b.build(app),
+        }
+    };
+    let app_menu = SubmenuBuilder::new(app, "PullStream")
+        .item(&item("about", "About PullStream", None)?)
+        .item(&item("check-updates", "Check for Updates…", None)?)
+        .separator()
+        .item(&item("settings", "Settings…", Some("CmdOrCtrl+,"))?)
+        .separator()
+        .services()
+        .separator()
+        .hide()
+        .hide_others()
+        .show_all()
+        .separator()
+        .quit()
+        .build()?;
+    let file = SubmenuBuilder::new(app, "File")
+        .item(&item("new-download", "New Download", Some("CmdOrCtrl+N"))?)
+        .item(&item("paste-download", "Paste Link and Fetch", Some("CmdOrCtrl+Shift+V"))?)
+        .separator()
+        .item(&item("open-folder", "Open Downloads Folder", Some("CmdOrCtrl+Shift+O"))?)
+        .separator()
+        .close_window()
+        .build()?;
+    let edit = SubmenuBuilder::new(app, "Edit")
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .build()?;
+    let view = SubmenuBuilder::new(app, "View")
+        .item(&item("view-downloads", "Downloads", Some("CmdOrCtrl+1"))?)
+        .item(&item("view-history", "History", Some("CmdOrCtrl+2"))?)
+        .separator()
+        .item(&item("find", "Search Downloads", Some("CmdOrCtrl+F"))?)
+        .separator()
+        .fullscreen()
+        .build()?;
+    let downloads = SubmenuBuilder::new(app, "Downloads")
+        .item(&item("pause-all", "Pause All", Some("CmdOrCtrl+Alt+P"))?)
+        .item(&item("resume-all", "Resume All", Some("CmdOrCtrl+Alt+R"))?)
+        .item(&item("retry-failed", "Retry Failed", None)?)
+        .separator()
+        .item(&item("clear-finished", "Clear Finished", None)?)
+        .build()?;
+    let window = SubmenuBuilder::new(app, "Window").minimize().maximize().build()?;
+    let help = SubmenuBuilder::new(app, "Help")
+        .item(&item("help", "PullStream Help", None)?)
+        .item(&item("terms", "Terms & Conditions", None)?)
+        .separator()
+        .item(&item("diagnostics", "Copy Diagnostics", None)?)
+        .build()?;
+    MenuBuilder::new(app)
+        .items(&[&app_menu, &file, &edit, &view, &downloads, &window, &help])
+        .build()
 }
