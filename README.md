@@ -16,7 +16,11 @@ then merges and converts them for you.
 [![Rust](https://img.shields.io/badge/Rust-core-B7410E?logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![React](https://img.shields.io/badge/React-UI-61DAFB?logo=react&logoColor=black)](https://react.dev)
 
-[**Download**](../../releases/latest) · [Features](#features) · [Installation](#installation) · [Build from source](#building-from-source) · [Support](#support)
+[**Download**](../../releases/latest) · [Features](#features) · [Screenshots](#screenshots) · [Installation](#installation) · [Build from source](#building-from-source) · [Support](#support)
+
+<br/>
+
+<img src="screenshots/downloads.png" alt="PullStream downloading a playlist: one video and a grouped playlist with live progress, speed and time left" width="900" />
 
 </div>
 
@@ -30,6 +34,7 @@ then merges and converts them for you.
 ## Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Installation](#installation)
 - [First launch](#first-launch)
 - [Using PullStream](#using-pullstream)
@@ -62,6 +67,31 @@ then merges and converts them for you.
 | 🔄 **Auto-updates** | Signed in-app updates with a "What's new" screen. |
 | 🌐 **English and हिन्दी** | Full UI in English and Hindi. |
 | 🔒 **Private** | No account, no ads, no tracking. Everything runs on your computer. |
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/preview.png" alt="Video preview with quality options, file sizes, codecs, subtitle languages and trim" />
+      <p align="center"><b>Preview before you download</b><br/><sub>Quality with size and codec, subtitles, trimming and save folder</sub></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/playlist-group.png" alt="Playlist collapsed into a single row with combined progress" />
+      <p align="center"><b>Playlists stay tidy</b><br/><sub>Grouped into one row with combined progress and speed</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/history.png" alt="History view listing finished downloads with time, size and file name" />
+      <p align="center"><b>History</b><br/><sub>Every finished download, searchable, one click to play or show in folder</sub></p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/settings.png" alt="Settings with tabs for General, Downloads, Formats, Network, Tools and Advanced" />
+      <p align="center"><b>Settings</b><br/><sub>Organised in tabs, with search, theme and language</sub></p>
+    </td>
+  </tr>
+</table>
 
 ## Installation
 

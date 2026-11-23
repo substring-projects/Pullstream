@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
+
+# Raw, unedited screenshots (processed copies live in screenshots/)
+screenshots/original/
