@@ -55,7 +55,7 @@ then merges and converts them for you.
 | 📃 **Whole playlists** | Load a playlist of any size, choose videos with checkboxes, and save them numbered in their own folder. |
 | 🎬 **Any quality** | Video up to 4K/8K as MP4, with size estimates before you download. |
 | 🎵 **Audio only** | Extract MP3, M4A, Opus, FLAC or WAV, with cover art and tags embedded. |
-| 🌐 **1,000+ sites** | YouTube, Vimeo, X, Instagram and every other site [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). |
+| 🌐 **1,000+ sites** | Works with video links from more than 1,000 websites: every site [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). |
 | ⏯️ **Full queue control** | Pause, resume, cancel and retry each download or all at once. Interrupted downloads continue after a restart. |
 | 📋 **Smart link input** | Paste, drag and drop, or copy a link and PullStream offers to fetch it. Paste many links to queue them all. |
 | 🪶 **Small and fast** | A ~10 MB app that starts instantly. Built with Rust and Tauri, not Electron. |
@@ -151,9 +151,9 @@ PullStream uses three free, open-source tools to do the heavy lifting. They aren
 
 | Tool | What it does | Download size |
 |---|---|---|
-| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Reads videos and playlists from YouTube and 1,000+ sites | ~25–50 MB |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Reads videos and playlists from 1,000+ sites | ~25–50 MB |
 | [FFmpeg](https://ffmpeg.org) | Merges HD video with audio and converts to MP3 | ~55–115 MB |
-| [Deno](https://deno.com) | Solves YouTube's playback checks | ~40 MB |
+| [Deno](https://deno.com) | Handles video sites' playback checks | ~40 MB |
 
 Click **Download & install** and wait about 30 seconds on a typical connection. Every file comes from its official release source, is checked against the publisher's **SHA-256 checksum**, and is test-run before it is used.
 
@@ -181,11 +181,11 @@ Files are saved to `Downloads/PullStream` by default. Change the folder, the num
 ## Troubleshooting
 
 <details>
-<summary><b>A YouTube video suddenly fails to download</b></summary>
+<summary><b>A video that used to work suddenly fails to download</b></summary>
 
 <br/>
 
-YouTube changes often. Open **Settings → Tools** and click **Update** next to yt-dlp. This fixes most failures.
+Video sites change often. Open **Settings → Tools** and click **Update** next to yt-dlp. This fixes most failures.
 
 </details>
 
@@ -194,7 +194,7 @@ YouTube changes often. Open **Settings → Tools** and click **Update** next to 
 
 <br/>
 
-In **Settings → App → Use browser cookies**, choose the browser where you're signed in to YouTube. PullStream then uses that session for downloads.
+In **Settings → App → Use browser cookies**, choose the browser where you're signed in to the video site. PullStream then uses that session for downloads.
 
 </details>
 
@@ -353,7 +353,7 @@ PullStream is built on excellent open-source software:
 |---|---|---|
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Media extraction | Unlicense |
 | [FFmpeg](https://ffmpeg.org/legal.html) | Merging and conversion | LGPL / GPL |
-| [Deno](https://github.com/denoland/deno) | JavaScript runtime for YouTube checks | MIT |
+| [Deno](https://github.com/denoland/deno) | JavaScript runtime for playback checks | MIT |
 | [Tauri](https://tauri.app) | Desktop app framework | MIT / Apache-2.0 |
 | [React](https://react.dev), [Tailwind CSS](https://tailwindcss.com), [Motion](https://motion.dev), [Lucide](https://lucide.dev) | User interface | MIT / ISC |
 

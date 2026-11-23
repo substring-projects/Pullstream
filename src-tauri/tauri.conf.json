@@ -42,7 +42,7 @@
     "copyright": "\u00a9 2026 Substring Technologies. All rights reserved.",
     "homepage": "https://substringtechnologies.com/",
     "shortDescription": "Fast parallel video and playlist downloader",
-    "longDescription": "PullStream downloads videos and full playlists from YouTube and 1,000+ other sites, several at once, in any quality or as MP3/M4A audio.",
+    "longDescription": "PullStream downloads videos and full playlists from 1,000+ websites, several at once, in any quality or as MP3/M4A audio.",
     "macOS": {
       "minimumSystemVersion": "11.0"
     },

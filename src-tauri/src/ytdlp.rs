@@ -36,7 +36,7 @@ pub fn ytdlp_install_dir(app: &AppHandle) -> Option<PathBuf> {
 }
 
 /// Search order: PullStream's tools → system installs. Also used as PATH for
-/// child processes so yt-dlp finds deno (needed for YouTube) and ffprobe.
+/// child processes so yt-dlp finds deno (needed for some sites' playback checks) and ffprobe.
 fn search_dirs(app: &AppHandle) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = Vec::new();
     dirs.extend(tools_bin_dir(app));
@@ -362,7 +362,7 @@ fn codec_family(vcodec: &str) -> String {
 
 /// Uploaded subtitles first, then auto-generated captions for languages
 /// that have no uploaded track. Auto captions are limited to the video's
-/// original language plus English/Hindi to keep the list short (YouTube
+/// original language plus English/Hindi to keep the list short (the site
 /// offers auto-translation into 100+ languages).
 fn parse_subtitles(v: &Value) -> Vec<SubtitleTrack> {
     let mut out: Vec<SubtitleTrack> = Vec::new();
